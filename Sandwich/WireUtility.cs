@@ -18,19 +18,37 @@ namespace Sandwich
 {
 	public class WireUtility
 	{
-		public static IEnumerable<GraphicsPath> GetVisibleWirePaths(GH_Canvas canvas)
+		public static IEnumerable<Wire> GetVisibleWires(GH_Canvas canvas)
 		{
 			foreach (IGH_DocumentObject obj in canvas.Document.Objects)
 			{
-				if (obj is IGH_Param target)
+				if (obj is IGH_Param target) //Paramの場合
 				{
 					foreach (IGH_Param source in target.Sources)
 					{
-						GraphicsPath path = GH_Painter.ConnectionPath(target.Attributes.InputGrip, source.Attributes.OutputGrip, GH_WireDirection.left, GH_WireDirection.right);
-						yield return path;
+						if (target != null && source != null)
+							yield return new Wire(source, target);
 					}
 				}
+				else if (obj is IGH_Component component) //コンポーネントの場合
+				{ 
+					
+				}
 			}
+		}
+	}
+
+	public class Wire
+	{
+		public IGH_Param source { get; private set; }
+		public IGH_Param target { get; private set; }
+		public GraphicsPath path { get; private set; }
+
+		public Wire(IGH_Param _source, IGH_Param _target)
+		{
+			source = _source;
+			target = _target;
+			path = GH_Painter.ConnectionPath(target.Attributes.InputGrip, source.Attributes.OutputGrip, GH_WireDirection.left, GH_WireDirection.right);
 		}
 	}
 }
