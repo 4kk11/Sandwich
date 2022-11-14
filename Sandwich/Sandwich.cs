@@ -34,8 +34,7 @@ namespace Sandwich
 				GH_Canvas canvas = Grasshopper.Instances.ActiveCanvas;
 				if (canvas.IsDocument)
 				{
-					if (canvas.ActiveInteraction is GH_DragInteraction &&
-						!(canvas.ActiveInteraction is SandwichInteraction))
+					if (canvas.ActiveInteraction is GH_DragInteraction && !(canvas.ActiveInteraction is SandwichInteraction))
 					{
 						canvas.ActiveInteraction = new SandwichInteraction(canvas, new GH_CanvasMouseEvent(canvas.Viewport,
 							new MouseEventArgs(MouseButtons.None, 0, canvas.CursorControlPosition.X, canvas.CursorControlPosition.Y, 0)));
@@ -60,7 +59,7 @@ namespace Sandwich
 			wire = null;
 			IGH_Attributes att = GetDragingAtt();
 			IGH_DocumentObject obj = att?.GetTopLevel.DocObject;
-			if (obj != null)
+			if (obj != null && obj is IGH_Param) //(仮)IGH_Paramのみ
 			{
 				var wires = WireUtility.GetVisibleWires(Instances.ActiveCanvas);
 				if (wires.Count() == 0) return false;

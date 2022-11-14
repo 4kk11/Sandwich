@@ -22,8 +22,9 @@ namespace Sandwich
 		{
 			foreach (IGH_DocumentObject obj in canvas.Document.Objects)
 			{
-				if (obj is IGH_Param target) //Paramの場合
+				if (obj is IGH_Param) //Paramの場合
 				{
+					IGH_Param target = (IGH_Param)obj;
 					foreach (IGH_Param source in target.Sources)
 					{
 						if (target != null && source != null)
@@ -31,8 +32,15 @@ namespace Sandwich
 					}
 				}
 				else if (obj is IGH_Component component) //コンポーネントの場合
-				{ 
-					
+				{
+					foreach (IGH_Param target in component.Params.Input)
+					{
+						foreach (IGH_Param source in target.Sources)
+						{
+							if (target != null && source != null)
+								yield return new Wire(source, target);
+						}
+					}
 				}
 			}
 		}
