@@ -4,16 +4,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Reflection;
-using Grasshopper;
-using Grasshopper.Kernel;
-using Grasshopper.GUI;
-using Grasshopper.GUI.Canvas;
 using System.Windows.Forms;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using Grasshopper;
+using Grasshopper.Kernel;
+using Grasshopper.Kernel.Undo;
+using Grasshopper.GUI;
+using Grasshopper.GUI.Canvas;
 using Grasshopper.GUI.Canvas.Interaction;
 using Rhino;
-
+using System.Runtime.CompilerServices;
 
 namespace Sandwich
 {
@@ -93,23 +94,43 @@ namespace Sandwich
 		private void SandwichObject(IGH_DocumentObject obj, Wire wire)
 		{
 			if (obj == null || wire == null) return;
+
+			List<IGH_UndoAction> undoActions = new List<IGH_UndoAction>(); //create undo actions
+
 			if (obj is IGH_Param param) //ドラッグ中のオブジェクトがIGH_Paramの場合
 			{
+				//ワイヤーをはずす
+				undoActions.AddRange(this.Canvas.Document.UndoUtil.CreateWireEvent("Remove target source", wire.target).Actions); 
 				wire.target.RemoveSource(wire.source);
+
+				undoActions.AddRange(this.Canvas.Document.UndoUtil.CreateWireEvent("Remove param source", param).Actions);
 				param.RemoveAllSources();
 
 				for (int i = param.Recipients.Count-1; i >= 0; i--)
 				{
-					param.Recipients[i].RemoveSource(param);
+					IGH_Param recipient = param.Recipients[i];
+					undoActions.AddRange(this.Canvas.Document.UndoUtil.CreateWireEvent("Remove param recipient", recipient).Actions);
+					recipient.RemoveSource(param);
 				}
 
-				if(param.Attributes.HasInputGrip) param.AddSource(wire.source);
-				if (param.Attributes.HasOutputGrip) wire.target.AddSource(param);
+				//ワイヤーをつける
+				if (param.Attributes.HasInputGrip)
+				{
+					undoActions.AddRange(this.Canvas.Document.UndoUtil.CreateWireEvent("Add param source", param).Actions);
+					param.AddSource(wire.source);
+				}
+				if (param.Attributes.HasOutputGrip)
+				{
+					undoActions.AddRange(this.Canvas.Document.UndoUtil.CreateWireEvent("Add target source", wire.target).Actions);
+					wire.target.AddSource(param);
+				}
 			}
 			else if (obj is IGH_Component comp) //ドラッグ中のオブジェクトがIGH_Componentの場合(保留)
 			{
 				return;
 			}
+
+			this.Canvas.Document.UndoUtil.RecordEvent("Sandwich", undoActions);
 			obj.ExpireSolution(true);
 		}
 
@@ -150,7 +171,7 @@ namespace Sandwich
 			if (e.KeyCode == Keys.ControlKey)
 			{
 				//DragInteractionに戻す(SandwichInteractionは自動的に破棄される)
-				GH_Canvas canvas = Grasshopper.Instances.ActiveCanvas;
+				GH_Canvas canvas = this.Canvas;
 				canvas.ActiveInteraction = new GH_DragInteraction(canvas, new GH_CanvasMouseEvent(canvas.Viewport,
 								new MouseEventArgs(MouseButtons.None, 0, canvas.CursorControlPosition.X, canvas.CursorControlPosition.Y, 0)));
 			}
