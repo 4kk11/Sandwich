@@ -20,12 +20,14 @@ namespace Sandwich
 {
 	public class SandwichInteraction : GH_DragInteraction
 	{
-		
+		private static IEnumerable<Wire> wires;
 
 		public SandwichInteraction(GH_Canvas canvas, GH_CanvasMouseEvent mouseEvent) : base(canvas, mouseEvent)
 		{
 			//なにかのイベントハンドラを登録したいときはここに書く
 			HighlightWire.Init();
+			wires = WireUtility.GetVisibleWires(this.Canvas); //ワイヤーを全探査するのはctrlを押したときのみに留める
+			//RhinoApp.WriteLine(wires.Count().ToString());
 		}
 
 		public static void SetActiveInteraction(object sender, KeyEventArgs e)
@@ -39,10 +41,10 @@ namespace Sandwich
 					{
 						canvas.ActiveInteraction = new SandwichInteraction(canvas, new GH_CanvasMouseEvent(canvas.Viewport,
 							new MouseEventArgs(MouseButtons.None, 0, canvas.CursorControlPosition.X, canvas.CursorControlPosition.Y, 0)));
-						e.Handled = true;
 					}
+					typeof(KeyEventArgs).GetField("keyData", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(e, Keys.Select);
 				}
-				
+				e.Handled = true;
 			}
 		}
 
@@ -62,7 +64,7 @@ namespace Sandwich
 			IGH_DocumentObject obj = att?.GetTopLevel.DocObject;
 			if (obj != null && obj is IGH_Param) //(仮)IGH_Paramのみ
 			{
-				var wires = WireUtility.GetVisibleWires(Instances.ActiveCanvas);
+				//var wires = WireUtility.GetVisibleWires(Instances.ActiveCanvas);
 				if (wires.Count() == 0) return false;
 
 				RectangleF bounds = att.Bounds;
@@ -146,11 +148,13 @@ namespace Sandwich
 
 				RhinoApp.WriteLine("onWire!!");
 			}
+			
 			return base.RespondToMouseUp(sender, e);
 		}
 
 		public override GH_ObjectResponse RespondToMouseMove(GH_Canvas sender, GH_CanvasMouseEvent e)
 		{
+			
 			if (onWire(out Wire wire))
 			{
 				//ワイヤーをハイライト
@@ -182,6 +186,7 @@ namespace Sandwich
 		{
 			//コンストラクタで登録したイベントハンドラを破棄したいときはここに書く
 			HighlightWire.Reset();
+			wires = null;
 			base.Destroy();
 		}
 

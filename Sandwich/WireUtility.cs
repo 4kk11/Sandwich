@@ -9,6 +9,7 @@ using Grasshopper.Kernel;
 using Grasshopper.GUI;
 using Grasshopper.GUI.Canvas;
 using System.Windows.Forms;
+using System.Drawing;
 using System.Drawing.Drawing2D;
 using Grasshopper.GUI.Canvas.Interaction;
 using Rhino;
@@ -22,23 +23,38 @@ namespace Sandwich
 		{
 			foreach (IGH_DocumentObject obj in canvas.Document.Objects)
 			{
+				//ビューに入っていないものは除外する
+				RectangleF rec = canvas.Viewport.VisibleRegion;
+
 				if (obj is IGH_Param) //Paramの場合
 				{
 					IGH_Param target = (IGH_Param)obj;
+					if (target.WireDisplay == GH_ParamWireDisplay.hidden) continue;
 					foreach (IGH_Param source in target.Sources)
 					{
 						if (target != null && source != null)
-							yield return new Wire(source, target);
+						{
+							Wire wire = new Wire(source, target);
+							Region region = new Region(wire.path);
+							if (region.IsVisible(rec))
+								yield return wire;
+						}
 					}
 				}
 				else if (obj is IGH_Component component) //コンポーネントの場合
 				{
 					foreach (IGH_Param target in component.Params.Input)
 					{
+						if (target.WireDisplay == GH_ParamWireDisplay.hidden) continue;
 						foreach (IGH_Param source in target.Sources)
 						{
 							if (target != null && source != null)
-								yield return new Wire(source, target);
+							{
+								Wire wire = new Wire(source, target);
+								Region region = new Region(wire.path);
+								if (region.IsVisible(rec))
+									yield return wire;
+							}
 						}
 					}
 				}
