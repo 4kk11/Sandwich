@@ -27,7 +27,6 @@ namespace Sandwich
 			//なにかのイベントハンドラを登録したいときはここに書く
 			HighlightWire.Init();
 			wires = WireUtility.GetVisibleWires(this.Canvas); //ワイヤーを全探査するのはctrlを押したときのみに留める
-			//RhinoApp.WriteLine(wires.Count().ToString());
 		}
 
 		public static void SetActiveInteraction(object sender, KeyEventArgs e)
@@ -42,7 +41,6 @@ namespace Sandwich
 						canvas.ActiveInteraction = new SandwichInteraction(canvas, new GH_CanvasMouseEvent(canvas.Viewport,
 							new MouseEventArgs(MouseButtons.None, 0, canvas.CursorControlPosition.X, canvas.CursorControlPosition.Y, 0)));
 					}
-					typeof(KeyEventArgs).GetField("keyData", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(e, Keys.Select);
 				}
 				e.Handled = true;
 			}
@@ -64,7 +62,6 @@ namespace Sandwich
 			IGH_DocumentObject obj = att?.GetTopLevel.DocObject;
 			if (obj != null && obj is IGH_Param) //(仮)IGH_Paramのみ
 			{
-				//var wires = WireUtility.GetVisibleWires(Instances.ActiveCanvas);
 				if (wires.Count() == 0) return false;
 
 				RectangleF bounds = att.Bounds;
@@ -138,8 +135,7 @@ namespace Sandwich
 
 
 		public override GH_ObjectResponse RespondToMouseUp(GH_Canvas sender, GH_CanvasMouseEvent e)
-		{
-			
+		{	
 			if (onWire(out Wire wire))
 			{
 				//つなげ変える
@@ -153,8 +149,7 @@ namespace Sandwich
 		}
 
 		public override GH_ObjectResponse RespondToMouseMove(GH_Canvas sender, GH_CanvasMouseEvent e)
-		{
-			
+		{	
 			if (onWire(out Wire wire))
 			{
 				//ワイヤーをハイライト
