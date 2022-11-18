@@ -34,36 +34,10 @@ namespace Sandwich
 		{
 			Instances.CanvasCreated -= AppendSandwichInteraction;
 
-			GH_DocumentEditor editor = Instances.DocumentEditor;
 
-			var events = (System.ComponentModel.EventHandlerList)typeof(Control).GetProperty("Events", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(editor, null);
-			object key = typeof(Control).GetField("EventKeyDown", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
-			Delegate handlers = events[key];
-
-			if (handlers != null)
-			{
-				foreach (Delegate handler in handlers.GetInvocationList())
-				{
-					if (handler == null)
-						continue;
-					var dele = (KeyEventHandler)Delegate.CreateDelegate(typeof(KeyEventHandler), editor, handler.Method, true);
-					editor.KeyDown -= dele;
-				}
-			}
-			
 			Instances.DocumentEditor.KeyDown += SandwichInteraction.SetActiveInteraction;
-			//Instances.ActiveCanvas.KeyDown += SandwichInteraction.SetActiveInteraction;
+			Instances.DocumentEditor.KeyUp += SandwichInteraction.ReleaseButton;
 
-			if (handlers != null)
-			{
-				foreach (Delegate handler in handlers.GetInvocationList())
-				{
-					if (handler == null)
-						continue;
-					var dele = (KeyEventHandler)Delegate.CreateDelegate(typeof(KeyEventHandler), editor, handler.Method, true);
-					editor.KeyDown += dele;
-				}
-			}
 		}
 
 	}
