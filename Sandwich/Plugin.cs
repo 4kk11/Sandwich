@@ -4,9 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Drawing;
+using System.Windows.Forms;
 using Grasshopper;
 using Grasshopper.Kernel;
+using Grasshopper.GUI;
 using Grasshopper.GUI.Canvas;
+using System.Reflection;
 
 namespace Sandwich
 {
@@ -31,8 +34,36 @@ namespace Sandwich
 		{
 			Instances.CanvasCreated -= AppendSandwichInteraction;
 
-			Instances.DocumentEditor.KeyDown += SandwichInteraction.SetActiveInteraction;
+			GH_DocumentEditor editor = Instances.DocumentEditor;
+
+			var events = (System.ComponentModel.EventHandlerList)typeof(Control).GetProperty("Events", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(editor, null);
+			object key = typeof(Control).GetField("EventKeyDown", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+			Delegate handlers = events[key];
+
+			if (handlers != null)
+			{
+				foreach (Delegate handler in handlers.GetInvocationList())
+				{
+					if (handler == null)
+						continue;
+					var dele = (KeyEventHandler)Delegate.CreateDelegate(typeof(KeyEventHandler), editor, handler.Method, true);
+					editor.KeyDown -= dele;
+				}
+			}
 			
+			Instances.DocumentEditor.KeyDown += SandwichInteraction.SetActiveInteraction;
+			//Instances.ActiveCanvas.KeyDown += SandwichInteraction.SetActiveInteraction;
+
+			if (handlers != null)
+			{
+				foreach (Delegate handler in handlers.GetInvocationList())
+				{
+					if (handler == null)
+						continue;
+					var dele = (KeyEventHandler)Delegate.CreateDelegate(typeof(KeyEventHandler), editor, handler.Method, true);
+					editor.KeyDown += dele;
+				}
+			}
 		}
 
 	}
