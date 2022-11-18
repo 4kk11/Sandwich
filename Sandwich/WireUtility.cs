@@ -36,6 +36,7 @@ namespace Sandwich
 						{
 							Wire wire = new Wire(source, target);
 							Region region = new Region(wire.path);
+							
 							if (region.IsVisible(rec))
 								yield return wire;
 						}
@@ -72,7 +73,15 @@ namespace Sandwich
 		{
 			source = _source;
 			target = _target;
-			path = GH_Painter.ConnectionPath(target.Attributes.InputGrip, source.Attributes.OutputGrip, GH_WireDirection.left, GH_WireDirection.right);
+			PointF inputGrip = target.Attributes.InputGrip;
+			PointF outputGrip = source.Attributes.OutputGrip;
+			path = GH_Painter.ConnectionPath(inputGrip, outputGrip, GH_WireDirection.left, GH_WireDirection.right);
+			if (inputGrip.Y == outputGrip.Y)
+			{
+				//ワイヤーが直線になるとき、何故かRegionが作れなくなるので以下で対処
+				path.Widen(new Pen(Color.White, 1.0f));
+			}
+			
 		}
 	}
 }

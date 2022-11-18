@@ -41,6 +41,7 @@ namespace Sandwich
 						canvas.ActiveInteraction = new SandwichInteraction(canvas, new GH_CanvasMouseEvent(canvas.Viewport,
 							new MouseEventArgs(MouseButtons.None, 0, canvas.CursorControlPosition.X, canvas.CursorControlPosition.Y, 0)));
 					}
+					typeof(KeyEventArgs).GetField("keyData", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(e, Keys.Select);
 				}
 				e.Handled = true;
 			}
@@ -136,20 +137,20 @@ namespace Sandwich
 
 		public override GH_ObjectResponse RespondToMouseUp(GH_Canvas sender, GH_CanvasMouseEvent e)
 		{	
+			
 			if (onWire(out Wire wire))
 			{
 				//つなげ変える
 				IGH_DocumentObject obj = GetDragingAtt().GetTopLevel.DocObject;
 				SandwichObject(obj, wire);
-
-				RhinoApp.WriteLine("onWire!!");
 			}
 			
 			return base.RespondToMouseUp(sender, e);
 		}
 
 		public override GH_ObjectResponse RespondToMouseMove(GH_Canvas sender, GH_CanvasMouseEvent e)
-		{	
+		{
+			
 			if (onWire(out Wire wire))
 			{
 				//ワイヤーをハイライト
@@ -161,7 +162,7 @@ namespace Sandwich
 				HighlightWire.path = null;
 				HighlightWire.isActive = false;
 			}
-
+			
 			return base.RespondToMouseMove(sender, e);
 		}
 
