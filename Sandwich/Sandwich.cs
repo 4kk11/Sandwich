@@ -21,28 +21,49 @@ namespace Sandwich
 	public class SandwichInteraction : GH_DragInteraction
 	{
 		private static IEnumerable<Wire> wires;
-
+		private static bool isPressingButton;
 		public SandwichInteraction(GH_Canvas canvas, GH_CanvasMouseEvent mouseEvent) : base(canvas, mouseEvent)
 		{
 			//なにかのイベントハンドラを登録したいときはここに書く
+			canvas.CanvasPostPaintWidgets += Canvas_PostPaintWidget;
+			Cursor.Hide();
 			HighlightWire.Init();
 			wires = WireUtility.GetVisibleWires(this.Canvas); //ワイヤーを全探査するのはctrlを押したときのみに留める
+
 		}
 
 		public static void SetActiveInteraction(object sender, KeyEventArgs e)
 		{
 			if (e.KeyCode == Keys.ControlKey)
 			{
+				if (isPressingButton) return;
+				isPressingButton = true;
+
 				GH_Canvas canvas = Grasshopper.Instances.ActiveCanvas;
 				if (canvas.IsDocument)
 				{
 					if (canvas.ActiveInteraction is GH_DragInteraction && !(canvas.ActiveInteraction is SandwichInteraction))
 					{
+						//SandwichInteractionをセット
 						canvas.ActiveInteraction = new SandwichInteraction(canvas, new GH_CanvasMouseEvent(canvas.Viewport,
 							new MouseEventArgs(MouseButtons.None, 0, canvas.CursorControlPosition.X, canvas.CursorControlPosition.Y, 0)));
 					}
-					typeof(KeyEventArgs).GetField("keyData", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(e, Keys.Select);
+					else if (canvas.ActiveInteraction is SandwichInteraction)
+					{
+						//DragInteractionに戻す
+						canvas.ActiveInteraction = new GH_DragInteraction(canvas, new GH_CanvasMouseEvent(canvas.Viewport,
+								new MouseEventArgs(MouseButtons.None, 0, canvas.CursorControlPosition.X, canvas.CursorControlPosition.Y, 0)));
+					}
 				}
+				e.Handled = true;
+			}
+		}
+
+		public static void ReleaseButton(object sender, KeyEventArgs e)
+		{
+			if (e.KeyCode == Keys.ControlKey)
+			{
+				isPressingButton = false;
 				e.Handled = true;
 			}
 		}
@@ -134,6 +155,13 @@ namespace Sandwich
 			obj.ExpireSolution(true);
 		}
 
+		private void Canvas_PostPaintWidget(GH_Canvas sender)
+		{
+			var cursorPos = sender.CursorCanvasPosition;
+			cursorPos.Y -= 13;
+			cursorPos.X -= 13;
+			sender.Graphics.DrawImage(Properties.Resources.SpecialCursor, cursorPos);
+		}
 
 		public override GH_ObjectResponse RespondToMouseUp(GH_Canvas sender, GH_CanvasMouseEvent e)
 		{	
@@ -166,21 +194,11 @@ namespace Sandwich
 			return base.RespondToMouseMove(sender, e);
 		}
 
-		public override GH_ObjectResponse RespondToKeyUp(GH_Canvas sender, KeyEventArgs e)
-		{
-			if (e.KeyCode == Keys.ControlKey)
-			{
-				//DragInteractionに戻す(SandwichInteractionは自動的に破棄される)
-				GH_Canvas canvas = this.Canvas;
-				canvas.ActiveInteraction = new GH_DragInteraction(canvas, new GH_CanvasMouseEvent(canvas.Viewport,
-								new MouseEventArgs(MouseButtons.None, 0, canvas.CursorControlPosition.X, canvas.CursorControlPosition.Y, 0)));
-			}
-			return base.RespondToKeyUp(sender,e);
-		}
-
 		public override void Destroy()
 		{
 			//コンストラクタで登録したイベントハンドラを破棄したいときはここに書く
+			this.Canvas.CanvasPostPaintWidgets -= Canvas_PostPaintWidget;
+			Cursor.Show();
 			HighlightWire.Reset();
 			wires = null;
 			base.Destroy();
@@ -189,7 +207,3 @@ namespace Sandwich
 	}
 }
 
-/*
-A = Instances.ActiveCanvas.ActiveInteraction;
-this.Component.ExpireSolution(true);
-*/
